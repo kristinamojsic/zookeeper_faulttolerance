@@ -13,7 +13,9 @@ import rs.raf.pds.faulttolerance.gRPC.AccountServiceGrpc;
 import rs.raf.pds.faulttolerance.gRPC.LogEntry;
 import rs.raf.pds.zookeeper.core.SyncPrimitive;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collections;
@@ -167,7 +169,7 @@ public class AppServer extends SyncPrimitive implements Runnable, ReplicatedLog.
             }
         }
 	}
-// dodata funkcija za slanje loga followeru (1.1)
+// 1.1
 	public static void sendLogsToFollowers(String followerAddress, String logFileName) {
 		try {
 			FileInputStream fis = new FileInputStream(logFileName);
@@ -193,7 +195,23 @@ public class AppServer extends SyncPrimitive implements Runnable, ReplicatedLog.
 	public void election() throws KeeperException, InterruptedException {
 		checkReplicaCandidate();
 	}
-
+	// 1.2
+	private void initializeStateFromLog(String filename) throws IOException{
+		System.out.println("Initializing from log file: " + filename);
+		try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+			String entry;
+			while ((entry = reader.readLine()) != null) {
+				System.out.println("Processing log entry: " + entry);
+				String[] parts = entry.split(" ");
+				int type = Integer.parseInt(parts[0]);
+				float value = Float.parseFloat(parts[1]);
+				if (type == 1) {
+					this.accountService.addAmount(value, false);
+				} else if (type == 2) {
+					this.accountService.witdrawAmount(value, false);
+				}
+			}
+		}}
 	@Override
 	public void run() {
 		while(running) {
@@ -271,7 +289,7 @@ public class AppServer extends SyncPrimitive implements Runnable, ReplicatedLog.
         try{
 	        node.election();
 	        node.start();
-
+			node.initializeStateFromLog(logFileName);
 	        gRPCServer.awaitTermination();
 
 	        node.stop();
