@@ -57,4 +57,31 @@ public class ReplicatedLog {
 		reader.close();
 		return entries;
 	}
+	public synchronized void takeSnapshot() {
+		try {
+			FileOutputStream snapshotOutputStream = new FileOutputStream("replicatedSnapshot.ser");
+			ObjectOutputStream objectOutputStream = new ObjectOutputStream(snapshotOutputStream);
+			objectOutputStream.writeObject(getLastLogEntryIndex());
+			objectOutputStream.close();
+			snapshotOutputStream.close();
+			System.out.println("Snapshot taken at log entry index: " + lastLogEntryIndex);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void loadSnapshot() {
+		try {
+			FileInputStream fileInputStream = new FileInputStream("replicatedSnapshot.ser");
+			ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+			this.lastLogEntryIndex = (Long) objectInputStream.readObject();
+			System.out.println("Loaded snapshot at log entry index: " + lastLogEntryIndex);
+			objectInputStream.close();
+			fileInputStream.close();
+		} catch (IOException | ClassNotFoundException i) {
+			i.printStackTrace();
+		}
+
+
+	}
 }

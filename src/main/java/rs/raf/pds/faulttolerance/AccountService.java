@@ -122,5 +122,33 @@ public class AccountService {
 		this.isLeader = isLeader;
 	}
 
+	public synchronized void takeSnapshot() {
+		try
+		{
+			FileOutputStream fileOutputStream = new FileOutputStream("snapshot.ser");
+			ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+			System.out.println(this.amount);
+			objectOutputStream.writeObject(this.amount);
+			objectOutputStream.close();
+			fileOutputStream.close();
+			System.out.println("Snapshot taken successfully");
+		}
+		catch (IOException i) {
+			i.printStackTrace();
+		}
+	}
+	public void loadSnapshot() {
+		try {
+			FileInputStream fileInputStream = new FileInputStream("snapshot.ser");
+			ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+			this.amount = (float) objectInputStream.readObject();
+			System.out.println("Loaded last amount: " + amount);
+			objectInputStream.close();
+			fileInputStream.close();
+		} catch (IOException | ClassNotFoundException i) {
+			i.printStackTrace();
+		}
+	}
+
 
 }

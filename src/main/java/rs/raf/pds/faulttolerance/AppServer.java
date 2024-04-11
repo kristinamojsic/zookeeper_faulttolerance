@@ -289,7 +289,11 @@ public class AppServer extends SyncPrimitive implements Runnable, ReplicatedLog.
         try{
 	        node.election();
 	        node.start();
+			accService.loadSnapshot();
+			replicatedLog.loadSnapshot();
 			node.initializeStateFromLog(logFileName);
+			SnapshotScheduler scheduler = new SnapshotScheduler();
+			scheduler.startSnapshotRoutine(accService, replicatedLog, 30, TimeUnit.SECONDS,logFileName);
 	        gRPCServer.awaitTermination();
 
 	        node.stop();
