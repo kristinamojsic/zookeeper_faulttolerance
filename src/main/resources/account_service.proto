@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "rs.raf.pds.faulttolerance.gRPC";
+
+service AccountService {
+
+	rpc AddAmount(AccountRequest) returns (AccountResponse) {}
+	
+	rpc WitdrawAmount(AccountRequest) returns (AccountResponse) {}
+	
+	rpc GetAmount(AccountRequest) returns (AccountResponse) {}
+	
+	rpc AppendLog(LogEntry) returns (LogResponse) {}
+	
+	rpc GetLeaderInfo(LeaderRequest) returns (LeaderInfo){}
+	
+}
+
+enum AccountRequestType {
+	GET = 0;
+	ADD = 1;
+	WITDRAWAL = 2;
+}
+
+message AccountRequest {
+	int32 request_id = 1;
+	optional float amount = 2;
+	AccountRequestType op_type = 3;
+}
+
+enum RequestStatus {
+  STATUS_OK = 0;
+  UPDATE_REJECTED_NOT_LEADER = 1;
+  WITDRAWAL_REJECT_NOT_SUFFICIENT_AMOUNT = 2;
+}
+
+message AccountResponse {
+ 	RequestStatus status = 1;
+ 	int32 request_id = 2;
+  	optional float balance = 3;
+	optional string message = 4;
+}
+
+message LogEntry {
+	uint64 entryAtIndex = 1;
+	bytes logEntryData = 2;
+}
+
+enum LogStatus {
+	LOG_OK = 0;
+	IO_ERROR = 1; 
+	LOG_HASNT_LAST_ENTRY = 2;
+}
+message LogResponse {
+	LogStatus status = 1;
+	uint64 entryAtIndex = 2;
+	optional uint64 lastEntryIndex = 3;
+}
+
+message LeaderRequest {}
+
+message LeaderInfo{
+	bool imLeader = 1;
+	string hostnamePort = 2;
+}

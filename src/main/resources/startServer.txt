@@ -1,0 +1,1 @@
+java -cp PDS-FT1-1.0.jar;.;lib/* rs.raf.pds.faulttolerance.AppServer localhost:2181 809# server#Log.log
