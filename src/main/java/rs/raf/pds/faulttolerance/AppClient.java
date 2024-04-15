@@ -59,12 +59,41 @@ public class AppClient extends SyncPrimitive {
 
             	System.out.println("Leader je "+leaderNodeName);
 
-            	//if (channel != null)
-            	//	channel.shutdown();
-
-            	blockingStub = getBlockingStub(leaderHostNamePort);
+				if (!isLeaderActive(leaderHostNamePort)) {
+					System.out.println("Waiting for leader...");
+					Thread.sleep(2000);
+					checkLeader();
+				}
+				else {
+					blockingStub = getBlockingStub(leaderHostNamePort);
+				}
             }
         }
+	}
+	private boolean isLeaderActive(String leaderHostNamePort) {
+		ManagedChannel channel = null;
+		try {
+			String[] splits = leaderHostNamePort.split(":");
+			channel = ManagedChannelBuilder.forAddress(splits[0], Integer.parseInt(splits[1]))
+					.usePlaintext()
+					.build();
+			AccountServiceGrpc.AccountServiceBlockingStub blockingStub = AccountServiceGrpc.newBlockingStub(channel);
+
+			AccountRequest request = AccountRequest.newBuilder()
+					.setRequestId(1)
+					.setOpType(AccountRequestType.GET)
+					.build();
+
+			AccountResponse response = blockingStub.getAmount(request);
+			return (response != null && response.getStatus() == RequestStatus.STATUS_OK);
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+			return false;
+		} finally {
+			if (channel != null) {
+				channel.shutdown();
+			}
+		}
 	}
     public  AccountServiceGrpc.AccountServiceBlockingStub getBlockingStub(String hostNamePort){
 		String[] splits = hostNamePort.split(":");
