@@ -7,12 +7,12 @@ import rs.raf.pds.faulttolerance.gRPC.*;
 
 import java.io.*;
 import java.util.Scanner;
-// pomocna funkcija koja pomaze implementaciji grpcservera - funkcija koje su definisane u proto fajlu
+
 public class AccountService {
-// byte array input stream
+
 	ByteArrayInputStream bais;
 	ByteArrayOutputStream baos = new ByteArrayOutputStream();
-// data input stream
+
 	DataInputStream dis = new DataInputStream(bais);
 	DataOutputStream dos = new DataOutputStream(baos);
 
@@ -24,7 +24,7 @@ public class AccountService {
 	public AccountService(ReplicatedLog log) {
 		this.log = log;
 	}
-	// funkcija koja ispituje da li dodati u log ili ne
+
 	public float addAmount(float value, boolean applyLog) {
 
 		if (applyLog) {
