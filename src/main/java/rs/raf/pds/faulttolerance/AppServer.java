@@ -257,6 +257,7 @@ public class AppServer extends SyncPrimitive implements Runnable, ReplicatedLog.
 	public String getLeaaderGRPCAddress() {
 		return leaaderGRPCAddress;
 	}
+
 	public static void main(String[] args) throws IOException, InterruptedException {
 
 		 if (args.length != 3) {

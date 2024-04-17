@@ -7,6 +7,7 @@ import org.apache.zookeeper.WatchedEvent;
 import rs.raf.pds.faulttolerance.gRPC.*;
 import rs.raf.pds.zookeeper.core.SyncPrimitive;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class AppClient extends SyncPrimitive {
@@ -14,10 +15,10 @@ public class AppClient extends SyncPrimitive {
 	final String appRoot;
 	String leaderNodeName = null;
 	String leaderHostNamePort;
-
+	List<String> list = new ArrayList<>();
 	ManagedChannel channel = null;
 	AccountServiceGrpc.AccountServiceBlockingStub blockingStub = null;
-
+	AccountServiceGrpc.AccountServiceBlockingStub followerBlockingStub = null;
 	protected AppClient(String zkAddress, String appRoot) throws KeeperException, InterruptedException {
 		super(zkAddress);
 		this.appRoot = appRoot;
@@ -33,7 +34,7 @@ public class AppClient extends SyncPrimitive {
 	}
     public synchronized void checkLeader() throws KeeperException, InterruptedException {
 		//Thread.sleep(100);
-    	List<String> list = zk.getChildren(appRoot, false);
+    	list = zk.getChildren(appRoot, false);
         System.out.println("There are total:"+list.size()+ " replicas for elections!");
         for (int i=0; i<list.size(); i++)
         	System.out.print("NODE:"+list.get(i)+", ");
@@ -66,6 +67,13 @@ public class AppClient extends SyncPrimitive {
 				}
 				else {
 					blockingStub = getBlockingStub(leaderHostNamePort);
+				}
+				for (String nodeName : list) {
+					if (!nodeName.equals(leaderNodeName)) {
+						byte[] followerData = zk.getData(appRoot + "/" + nodeName, true, null);
+						String followerHostNamePort = new String(followerData);
+						followerBlockingStub = getBlockingStub(followerHostNamePort);
+					}
 				}
             }
         }
@@ -160,12 +168,33 @@ public class AppClient extends SyncPrimitive {
         			.setOpType(AccountRequestType.GET)
         			.build();
 
-        AccountResponse response;
+        AccountResponse responseLeader;
+		AccountResponse[] responsesFollowers;
 
         synchronized(this) {
-        	response = blockingStub.getAmount(request);
+			responseLeader = blockingStub.getAmount(request);
+			responsesFollowers = new AccountResponse[list.size() - 1];
+			int i = 0;
+			for (String nodeName : list) {
+				if (!nodeName.equals(leaderNodeName)) {
+					AccountRequest followerRequest = AccountRequest.newBuilder()
+							.setRequestId(1)
+							.setOpType(AccountRequestType.GET)
+							.build();
+
+					AccountResponse followerResponse = followerBlockingStub.getAmount(followerRequest);
+
+
+					responsesFollowers[i++] = followerResponse;
+				}
+			}
+
         }
-        ispisResponse(response, request);
+		ispisResponse(responseLeader, request);
+
+		for (int i = 0; i < responsesFollowers.length; i++) {
+			ispisResponse(responsesFollowers[i], request);
+		}
 
 
 
@@ -176,9 +205,9 @@ public class AppClient extends SyncPrimitive {
         			.setAmount(150.0f)
         			.build();
         synchronized(this) {
-        	response = blockingStub.addAmount(request);
+        	responseLeader = blockingStub.addAmount(request);
         }
-        ispisResponse(response, request);
+        ispisResponse(responseLeader, request);
 
 
 
@@ -190,9 +219,9 @@ public class AppClient extends SyncPrimitive {
         			.build();
 
         synchronized(this) {
-        	response = blockingStub.witdrawAmount(request);
+        	responseLeader = blockingStub.witdrawAmount(request);
         }
-        ispisResponse(response, request);
+        ispisResponse(responseLeader, request);
 
 
         /*System.out.println("Cetvrti poziv je witdrawAmount()");
